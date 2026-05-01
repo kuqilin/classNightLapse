@@ -4,13 +4,14 @@ from datetime import datetime, timedelta
 import sys
 
 # ===== 配置 =====
-START_HOUR, START_MINUTE = 23, 42
-END_HOUR, END_MINUTE = 23, 45
+START_HOUR, START_MINUTE = 0, 21
+END_HOUR, END_MINUTE = 0, 30
 CAMERA_INDEX = 0               # 摄像头编号，通常是 0
 OUTPUT_FILE = "timelapse.avi"  # 输出视频文件
 FPS = 30                       # 最终视频帧率
 FRAME_WIDTH = 3840             # 不出意外是适配广雅希沃
 FRAME_HEIGHT = 2160            # 白板摄像头的最高分辨率
+INTERVAL_SECONDS = 1           # 拍摄间隔，单位秒（默认 1 秒拍一帧）
 # ================
 
 def get_today_time(hour, minute):
@@ -25,7 +26,7 @@ def main():
 
     # 1. 检查时间是否已过
     if now >= end_dt:
-        print("拍摄时间已过（20:35），程序退出。")
+        print(f"拍摄时间已过（{end_dt.strftime('%H:%M:%S')}），程序退出。")
         sys.exit(0)
 
     # 2. 如果还没到开始时间，等待
@@ -86,7 +87,7 @@ def main():
             print(f"[{start_dt.strftime('%H:%M:%S')}] 第 1 帧")
         else:
             print("警告：开始时刻读取帧失败。")
-        next_capture = start_dt + timedelta(seconds=1)
+        next_capture = start_dt + timedelta(seconds=INTERVAL_SECONDS)
     else:
         # 立即拍摄第一帧
         ret, frame = cap.read()
@@ -95,7 +96,7 @@ def main():
             print(f"[{datetime.now().strftime('%H:%M:%S')}] 第 1 帧")
         else:
             print("警告：开始帧读取失败。")
-        next_capture = datetime.now() + timedelta(seconds=1)
+        next_capture = datetime.now() + timedelta(seconds=INTERVAL_SECONDS)
 
     # 5. 循环拍摄直到结束时间
     frame_count = 1
@@ -114,12 +115,12 @@ def main():
             if ret:
                 out.write(frame)
                 frame_count += 1
-                print(f"[{next_capture.strftime('%H:%M:%S')}] 第 {frame_count} 帧", end='\r')
+                print(f"[{next_capture.strftime('%H:%M:%S')}] 第 {frame_count} 帧 总第 {frame_count/FPS:.1f} 秒", end='\r')
             else:
                 print("警告：读取帧失败，跳过。")
 
             # 下一个预定拍摄时刻（绝对时间，避免累积偏差）
-            next_capture += timedelta(seconds=1)
+            next_capture += timedelta(seconds=INTERVAL_SECONDS)
 
     except KeyboardInterrupt:
         print("\n用户中断，正在保存已拍摄的视频...")
