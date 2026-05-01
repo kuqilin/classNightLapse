@@ -4,8 +4,8 @@ from datetime import datetime, timedelta
 import sys
 
 # ===== 配置 =====
-START_HOUR, START_MINUTE = 0, 21
-END_HOUR, END_MINUTE = 0, 30
+START_HOUR, START_MINUTE = 19, 00
+END_HOUR, END_MINUTE = 20, 30
 CAMERA_INDEX = 0               # 摄像头编号，通常是 0
 OUTPUT_FILE = "timelapse.avi"  # 输出视频文件
 FPS = 30                       # 最终视频帧率
