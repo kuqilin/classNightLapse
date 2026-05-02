@@ -6,7 +6,7 @@ import sys
 # ===== 配置 =====
 START_HOUR, START_MINUTE = 19, 00
 END_HOUR, END_MINUTE = 20, 30
-CAMERA_INDEX = 0               # 摄像头编号，通常是 0
+CAMERA_INDEX = 0               # 摄像头编号，通常是 0，暂时不知道多少，所以 0&1 都会编译一次
 OUTPUT_FILE = "timelapse.avi"  # 输出视频文件
 FPS = 30                       # 最终视频帧率
 FRAME_WIDTH = 3840             # 不出意外是适配广雅希沃
@@ -115,7 +115,7 @@ def main():
             if ret:
                 out.write(frame)
                 frame_count += 1
-                print(f"[{next_capture.strftime('%H:%M:%S')}] 第 {frame_count} 帧 总第 {frame_count/FPS:.1f} 秒", end='\r')
+                print(f"[{next_capture.strftime('%H:%M:%S')}] 第 {frame_count} 帧 总共 {frame_count/FPS:.2f} 秒", end='\r')
             else:
                 print("警告：读取帧失败，跳过。")
 
