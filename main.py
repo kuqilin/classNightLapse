@@ -2,7 +2,7 @@ import cv2
 from time import sleep
 from datetime import datetime, timedelta
 from sys import exit
-import math
+# import math
 
 # ===== 配置 =====
 START_HOUR, START_MINUTE = 18, 55
