@@ -1,12 +1,12 @@
 import cv2
-import time
+from time import sleep
 from datetime import datetime, timedelta
-import sys
+from sys import exit
 import math
 
 # ===== 配置 =====
-START_HOUR, START_MINUTE = 23, 50
-END_HOUR, END_MINUTE = 23, 55
+START_HOUR, START_MINUTE = 18, 55
+END_HOUR, END_MINUTE = 20, 35
 CAMERA_INDEX = 0               # 摄像头编号
 OUTPUT_FILE = f"{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.avi"  # 输出视频文件
 FPS = 30                       # 最终视频帧率
@@ -85,7 +85,7 @@ def main():
     # 1. 检查时间是否已过
     if now >= end_dt:
         print(f"拍摄时间已过（{end_dt.strftime('%H:%M:%S')}），程序退出。")
-        sys.exit(0)
+        exit(0)
 
     # 2. 如果还没到开始时间，等待
     if now < start_dt:
@@ -96,7 +96,7 @@ def main():
         pre_open_time = start_dt - timedelta(seconds=2)
         sleep_time = (pre_open_time - datetime.now()).total_seconds()
         if sleep_time > 0:
-            time.sleep(sleep_time)
+            sleep(sleep_time)
     else:
         print(f"当前时间已在 {start_dt.strftime('%H:%M:%S')} ~ {end_dt.strftime('%H:%M:%S')} 范围内，立即开始。")
 
@@ -104,7 +104,7 @@ def main():
     cap = cv2.VideoCapture(CAMERA_INDEX)
     if not cap.isOpened():
         print(f"错误：无法打开摄像头（索引 {CAMERA_INDEX}）。")
-        sys.exit(1)
+        exit(1)
 
     # 设置分辨率
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, FRAME_WIDTH)
@@ -118,7 +118,7 @@ def main():
     if not ret or frame is None:
         print("错误：无法从摄像头读取画面。")
         cap.release()
-        sys.exit(1)
+        exit(1)
 
     height, width = frame.shape[:2]
     # 定义编码和创建视频写出器
@@ -127,7 +127,7 @@ def main():
     if not out.isOpened():
         print("错误：无法创建视频文件，请检查编码器或磁盘空间。")
         cap.release()
-        sys.exit(1)
+        exit(1)
 
     print(f"视频尺寸：{width}x{height}，输出文件：{OUTPUT_FILE}")
 
@@ -137,7 +137,7 @@ def main():
         # 等待到开始时间
         remaining = (start_dt - datetime.now()).total_seconds()
         if remaining > 0:
-            time.sleep(remaining)
+            sleep(remaining)
         # 立即抓取第一帧
         ret, frame = cap.read()
         if ret:
@@ -166,7 +166,7 @@ def main():
             # 等待到下一个拍摄时刻
             sleep_sec = (next_capture - datetime.now()).total_seconds()
             if sleep_sec > 0:
-                time.sleep(sleep_sec)
+                sleep(sleep_sec)
 
             # 当前时间可能已超过结束时间，退出
             if datetime.now() >= end_dt:
