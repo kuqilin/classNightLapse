@@ -2,22 +2,80 @@ import cv2
 import time
 from datetime import datetime, timedelta
 import sys
+import math
 
 # ===== 配置 =====
-START_HOUR, START_MINUTE = 19, 00
-END_HOUR, END_MINUTE = 20, 30
+START_HOUR, START_MINUTE = 23, 50
+END_HOUR, END_MINUTE = 23, 55
 CAMERA_INDEX = 0               # 摄像头编号
 OUTPUT_FILE = f"{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.avi"  # 输出视频文件
 FPS = 30                       # 最终视频帧率
 FRAME_WIDTH = 1920             # 试了几个，只有这个能拍全班级
 FRAME_HEIGHT = 1080            # 3224 那个不够宽，拍不全
 INTERVAL_SECONDS = 1           # 拍摄间隔，单位秒（默认 1 秒拍一帧）
+SHOW_TIMESTAMP = True          # 是否显示时间
 # ================
 
 def get_today_time(hour, minute):
     """返回今天的指定时间 datetime 对象"""
     now = datetime.now()
     return now.replace(hour=hour, minute=minute, second=0, microsecond=0)
+
+def draw_timestamp(frame, text):
+    """
+    在图像右上角绘制带时间戳
+    背景颜色根据原图亮度自动选择黑底白字或白底黑字
+    """
+    h, w = frame.shape[:2]
+    # 字体设置
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    font_scale = 1.2
+    thickness = 2
+    margin = 20  # 边距
+
+    # 计算文本尺寸
+    (text_width, text_height), baseline = cv2.getTextSize(
+        text, font, font_scale, thickness)
+
+    # 背景框位置（右上角）
+    box_x1 = w - text_width - margin * 2
+    box_y1 = margin
+    box_x2 = w - margin
+    box_y2 = margin + text_height + margin
+
+    # 边界保护
+    if box_x1 < 0: box_x1 = 0
+    if box_y1 < 0: box_y1 = 0
+    if box_x2 > w: box_x2 = w
+    if box_y2 > h: box_y2 = h
+
+    # 取背景框区域的平均亮度
+    roi = frame[box_y1:box_y2, box_x1:box_x2]
+    gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
+    mean_brightness = cv2.mean(gray)[0]
+
+    # 根据亮度选择颜色：亮背景 -> 黑底白字，暗背景 -> 白底黑字
+    if mean_brightness > 128:
+        bg_color = (0, 0, 0)      # 黑色背景
+        text_color = (255, 255, 255)  # 白色文字
+    else:
+        bg_color = (255, 255, 255)  # 白色背景
+        text_color = (0, 0, 0)      # 黑色文字
+
+    # 创建用于半透明叠加的图层
+    overlay = frame.copy()
+    # 画实心矩形作为背景
+    cv2.rectangle(overlay, (box_x1, box_y1), (box_x2, box_y2), bg_color, -1)
+    # 将背景以 0.6 透明度叠加到原图
+    alpha = 0.6
+    frame[:, :, :] = cv2.addWeighted(overlay, alpha, frame, 1 - alpha, 0)
+
+    # 在背景上居中写文字
+    text_x = box_x1 + margin
+    text_y = box_y1 + margin + text_height
+    cv2.putText(frame, text, (text_x, text_y),
+                font, font_scale, text_color, thickness, cv2.LINE_AA)
+
 
 def main():
     start_dt = get_today_time(START_HOUR, START_MINUTE)
@@ -92,6 +150,9 @@ def main():
         # 立即拍摄第一帧
         ret, frame = cap.read()
         if ret:
+            if SHOW_TIMESTAMP:
+                    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    draw_timestamp(frame, now_str)
             out.write(frame)
             print(f"[{datetime.now().strftime('%H:%M:%S')}] 第 1 帧")
         else:
@@ -113,6 +174,9 @@ def main():
 
             ret, frame = cap.read()
             if ret:
+                if SHOW_TIMESTAMP:
+                    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    draw_timestamp(frame, now_str)
                 out.write(frame)
                 frame_count += 1
                 print(f"[{next_capture.strftime('%H:%M:%S')}] 第 {frame_count} 帧 总共 {frame_count/FPS:.2f} 秒", end='\r')
