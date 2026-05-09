@@ -6,11 +6,11 @@ import sys
 # ===== 配置 =====
 START_HOUR, START_MINUTE = 19, 00
 END_HOUR, END_MINUTE = 20, 30
-CAMERA_INDEX = 0               # 摄像头编号，通常是 0，暂时不知道多少，所以 0&1 都会编译一次
-OUTPUT_FILE = "timelapse.avi"  # 输出视频文件
+CAMERA_INDEX = 0               # 摄像头编号
+OUTPUT_FILE = f"{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.avi"  # 输出视频文件
 FPS = 30                       # 最终视频帧率
-FRAME_WIDTH = 3840             # 不出意外是适配广雅希沃
-FRAME_HEIGHT = 2160            # 白板摄像头的最高分辨率
+FRAME_WIDTH = 1920             # 试了几个，只有这个能拍全班级
+FRAME_HEIGHT = 1080            # 3224 那个不够宽，拍不全
 INTERVAL_SECONDS = 1           # 拍摄间隔，单位秒（默认 1 秒拍一帧）
 # ================
 
