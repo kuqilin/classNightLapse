@@ -2,6 +2,7 @@ import cv2
 from time import sleep
 from datetime import datetime, timedelta
 from sys import exit
+import os
 # import math
 
 # ===== 配置 =====
@@ -14,12 +15,19 @@ FRAME_WIDTH = 1920             # 试了几个，只有这个能拍全班级
 FRAME_HEIGHT = 1080            # 3224 那个不够宽，拍不全
 INTERVAL_SECONDS = 1           # 拍摄间隔，单位秒（默认 1 秒拍一帧）
 SHOW_TIMESTAMP = True          # 是否显示时间
+LOG_FILE = f"logs/{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.log"  # 日志文件
 # ================
 
 def get_today_time(hour, minute):
     """返回今天的指定时间 datetime 对象"""
     now = datetime.now()
     return now.replace(hour=hour, minute=minute, second=0, microsecond=0)
+
+def logprint(message, end='\n'):
+    """同时输出到控制台和日志文件（追加模式，自动创建文件）"""
+    print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {message}", end=end)
+    with open(LOG_FILE, 'a', encoding='utf-8') as f:
+        f.write(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {message} {end}")
 
 def draw_timestamp(frame, text):
     """
@@ -78,32 +86,36 @@ def draw_timestamp(frame, text):
 
 
 def main():
+    # 确保日志目录存在
+    log_dir = os.path.dirname(LOG_FILE)
+    if log_dir and not os.path.exists(log_dir):
+        os.makedirs(log_dir)
     start_dt = get_today_time(START_HOUR, START_MINUTE)
     end_dt = get_today_time(END_HOUR, END_MINUTE)
     now = datetime.now()
 
     # 1. 检查时间是否已过
     if now >= end_dt:
-        print(f"拍摄时间已过（{end_dt.strftime('%H:%M:%S')}），程序退出。")
+        logprint(f"拍摄时间已过（{end_dt.strftime('%H:%M:%S')}），程序退出。")
         exit(0)
 
     # 2. 如果还没到开始时间，等待
     if now < start_dt:
         wait_seconds = (start_dt - now).total_seconds()
-        print(f"当前时间 {now.strftime('%H:%M:%S')}，将在 {start_dt.strftime('%H:%M:%S')} 开始。")
-        print(f"等待 {wait_seconds:.0f} 秒...")
+        logprint(f"当前时间 {now.strftime('%H:%M:%S')}，将在 {start_dt.strftime('%H:%M:%S')} 开始。")
+        logprint(f"等待 {wait_seconds:.0f} 秒...")
         # 提前 2 秒打开摄像头初始化
         pre_open_time = start_dt - timedelta(seconds=2)
         sleep_time = (pre_open_time - datetime.now()).total_seconds()
         if sleep_time > 0:
             sleep(sleep_time)
     else:
-        print(f"当前时间已在 {start_dt.strftime('%H:%M:%S')} ~ {end_dt.strftime('%H:%M:%S')} 范围内，立即开始。")
+        logprint(f"当前时间已在 {start_dt.strftime('%H:%M:%S')} ~ {end_dt.strftime('%H:%M:%S')} 范围内，立即开始。")
 
     # 3. 打开摄像头
     cap = cv2.VideoCapture(CAMERA_INDEX)
     if not cap.isOpened():
-        print(f"错误：无法打开摄像头（索引 {CAMERA_INDEX}）。")
+        logprint(f"错误：无法打开摄像头（索引 {CAMERA_INDEX}）。")
         exit(1)
 
     # 设置分辨率
@@ -111,12 +123,12 @@ def main():
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, FRAME_HEIGHT)
     actual_w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     actual_h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    print(f"摄像头分辨率已设为：{actual_w}x{actual_h}")
+    logprint(f"摄像头分辨率已设为：{actual_w}x{actual_h}")
 
     # 读取一帧获取尺寸
     ret, frame = cap.read()
     if not ret or frame is None:
-        print("错误：无法从摄像头读取画面。")
+        logprint("错误：无法从摄像头读取画面。")
         cap.release()
         exit(1)
 
@@ -125,11 +137,11 @@ def main():
     fourcc = cv2.VideoWriter_fourcc(*'DIVX')
     out = cv2.VideoWriter(OUTPUT_FILE, fourcc, FPS, (width, height))
     if not out.isOpened():
-        print("错误：无法创建视频文件，请检查编码器或磁盘空间。")
+        logprint("错误：无法创建视频文件，请检查编码器或磁盘空间。")
         cap.release()
         exit(1)
 
-    print(f"视频尺寸：{width}x{height}，输出文件：{OUTPUT_FILE}")
+    logprint(f"视频尺寸：{width}x{height}，输出文件：{OUTPUT_FILE}")
 
     # 4. 精确对齐开始时间并拍摄第一帧
     now = datetime.now()
@@ -142,9 +154,9 @@ def main():
         ret, frame = cap.read()
         if ret:
             out.write(frame)
-            print(f"[{start_dt.strftime('%H:%M:%S')}] 第 1 帧")
+            logprint(f"第 1 帧")
         else:
-            print("警告：开始时刻读取帧失败。")
+            logprint("警告：开始时刻读取帧失败。")
         next_capture = start_dt + timedelta(seconds=INTERVAL_SECONDS)
     else:
         # 立即拍摄第一帧
@@ -154,9 +166,9 @@ def main():
                     now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                     draw_timestamp(frame, now_str)
             out.write(frame)
-            print(f"[{datetime.now().strftime('%H:%M:%S')}] 第 1 帧")
+            logprint(f"第 1 帧")
         else:
-            print("警告：开始帧读取失败。")
+            logprint("警告：开始帧读取失败。")
         next_capture = datetime.now() + timedelta(seconds=INTERVAL_SECONDS)
 
     # 5. 循环拍摄直到结束时间
@@ -179,22 +191,22 @@ def main():
                     draw_timestamp(frame, now_str)
                 out.write(frame)
                 frame_count += 1
-                print(f"[{next_capture.strftime('%H:%M:%S')}] 第 {frame_count} 帧 总共 {frame_count/FPS:.2f} 秒", end='\r')
+                logprint(f"第 {frame_count} 帧 共 {frame_count/FPS:.2f} 秒")
             else:
-                print("警告：读取帧失败，跳过。")
+                logprint("警告：读取帧失败，跳过。")
 
             # 下一个预定拍摄时刻（绝对时间，避免累积偏差）
             next_capture += timedelta(seconds=INTERVAL_SECONDS)
 
     except KeyboardInterrupt:
-        print("\n用户中断，正在保存已拍摄的视频...")
+        logprint("\n用户中断，正在保存已拍摄的视频...")
 
     finally:
         # 6. 清理资源
         cap.release()
         out.release()
         cv2.destroyAllWindows()
-        print(f"\n拍摄完成，共 {frame_count} 帧，视频时长约 {frame_count/FPS:.1f} 秒，保存至 {OUTPUT_FILE}")
+        logprint(f"\n拍摄完成，共 {frame_count} 帧，视频时长约 {frame_count/FPS:.1f} 秒，保存至 {OUTPUT_FILE}")
 
 if __name__ == "__main__":
     main()
