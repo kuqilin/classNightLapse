@@ -9,7 +9,7 @@ import os
 START_HOUR, START_MINUTE = 18, 55
 END_HOUR, END_MINUTE = 20, 35
 CAMERA_INDEX = 0               # 摄像头编号
-OUTPUT_FILE = f"{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.avi"  # 输出视频文件
+OUTPUT_FILE = f"outputs/{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.avi"  # 输出视频文件
 FPS = 30                       # 最终视频帧率
 FRAME_WIDTH = 1920             # 试了几个，只有这个能拍全班级
 FRAME_HEIGHT = 1080            # 3224 那个不够宽，拍不全
@@ -88,8 +88,11 @@ def draw_timestamp(frame, text):
 def main():
     # 确保日志目录存在
     log_dir = os.path.dirname(LOG_FILE)
+    output_dir = os.path.dirname(OUTPUT_FILE)
     if log_dir and not os.path.exists(log_dir):
         os.makedirs(log_dir)
+    if output_file and not os.path.exists(output_file):
+        os.makedirs(output_dir)
     start_dt = get_today_time(START_HOUR, START_MINUTE)
     end_dt = get_today_time(END_HOUR, END_MINUTE)
     now = datetime.now()
