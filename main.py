@@ -91,7 +91,7 @@ def main():
     output_dir = os.path.dirname(OUTPUT_FILE)
     if log_dir and not os.path.exists(log_dir):
         os.makedirs(log_dir)
-    if output_file and not os.path.exists(output_file):
+    if output_dir and not os.path.exists(output_dir):
         os.makedirs(output_dir)
     start_dt = get_today_time(START_HOUR, START_MINUTE)
     end_dt = get_today_time(END_HOUR, END_MINUTE)
