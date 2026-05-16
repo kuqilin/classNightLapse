@@ -3,13 +3,14 @@ from time import sleep
 from datetime import datetime, timedelta
 from sys import exit
 import os
-from webdav3.client import Client
+import requests
+from requests.auth import HTTPBasicAuth
 # import math
 
 # ===== 配置 =====
-WEBDAV = False                 # 是否启用 WebDAV 上传
-START_HOUR, START_MINUTE = 23, 35
-END_HOUR, END_MINUTE = 23, 50
+WEBDAV = True                 # 是否启用 WebDAV 上传
+START_HOUR, START_MINUTE = 18, 55
+END_HOUR, END_MINUTE = 20, 35
 CAMERA_INDEX = 0               # 摄像头编号
 OUTPUT_FILE = f"outputs/{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.avi"  # 输出视频文件
 FPS = 30                       # 最终视频帧率
@@ -20,15 +21,45 @@ SHOW_TIMESTAMP = True          # 是否显示时间
 LOG_FILE = f"logs/{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.log"  # 日志文件
 # ================
 
-# WebDAV 配置（如果启用）
-if WEBDAV:
-    """如果你需要使用 WebDAV 上传视频，请在这里填写你的服务器信息"""
-    options = {
-        "webdav_hostname": "https://your-webdav-server.com",
-        "webdav_login": "your-username",
-        "webdav_password": "your-password",
-        "disable_check": True
-    }
+
+# ========== WebDAV 配置 ==========
+USERNAME = "your_username"
+PASSWORD = "your_password"
+WEBDAV_URL = "your_webdav_url"
+# ==============================
+
+def upload_webdav(local_file: str, remote_path: str):
+    """
+    手动 PUT 上传到 WebDAV
+    local_file: 本地文件路径（如 test.txt）
+    remote_path: 网盘路径（如 /test.txt）
+    """
+    # 完整上传 URL
+    url = f"{WEBDAV_URL.rstrip('/')}/{remote_path.lstrip('/')}"
+    
+    # 读取文件二进制
+    with open(local_file, "rb") as f:
+        data = f.read()
+
+    # 手动发 PUT 请求（WebDAV 标准上传）
+    resp = requests.put(
+        url,
+        data=data,
+        auth=HTTPBasicAuth(USERNAME, PASSWORD),
+        timeout=120,
+        verify=False,  # 忽略 SSL 证书问题
+        headers={
+            "Content-Type": "application/octet-stream",
+            "User-Agent": "Mozilla/5.0"
+        }
+    )
+
+    if resp.status_code in (200, 201, 204):
+        logprint(f"上传成功：{remote_path}")
+    else:
+        logprint(f"上传失败：{resp.status_code}")
+        logprint(resp.text[:500])
+
 
 
 def get_today_time(hour, minute):
@@ -224,14 +255,7 @@ def main():
         cv2.destroyAllWindows()
         logprint(f"\n拍摄完成，共 {frame_count} 帧，视频时长约 {frame_count/FPS:.1f} 秒，保存至 {OUTPUT_FILE}")
         if WEBDAV:
-            try:
-                logprint("检测到 WebDAV 开启，开始连接...")
-                client = Client(options)
-                logprint("连接成功，正在上传视频...")
-                client.upload_sync(OUTPUT_FILE, OUTPUT_FILE)
-                logprint("上传成功！")
-            except Exception as e:
-                logprint(f"上传失败: {e}")
+            upload_webdav(OUTPUT_FILE, OUTPUT_FILE[8:])
 
 if __name__ == "__main__":
     main()
