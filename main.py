@@ -8,7 +8,7 @@ from requests.auth import HTTPBasicAuth
 # import math
 
 # ===== 配置 =====
-WEBDAV = True                 # 是否启用 WebDAV 上传
+WEBDAV = False                 # 是否启用 WebDAV 上传
 START_HOUR, START_MINUTE = 18, 55
 END_HOUR, END_MINUTE = 20, 35
 CAMERA_INDEX = 0               # 摄像头编号
